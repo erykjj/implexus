@@ -1,0 +1,42 @@
+# Sample config
+# Once generated, execute as root (replace 'name' with your mesh name):
+#   install wireguard
+#   mkdir -m 0700 /etc/wireguard/
+#   cp wg-name.conf /etc/wireguard/
+#   chown root:root /etc/wireguard/wg-name.conf
+#   chmod 600 /etc/wireguard/wg-name.conf
+#   systemctl enable wg-quick@wg-name
+#   systemctl start wg-quick@wg-name
+#   wg show
+# Allow access to your mesh IP range in your firewall:
+#   ufw default deny incoming
+#   ufw default allow outgoing
+#   ufw allow from xxx.xxx.xxx.0/24 [to any port xxx proto tcp]
+#   ufw reload
+---
+
+mesh:
+    name: example
+    keep_alive: 25
+
+devices:
+    - name: device1
+      mesh_ip: 10.10.10.1
+      real_ip: device1.com
+      connect_to: [device2, device3, device4]
+
+    - name: device2
+      mesh_ip: 10.10.10.2
+      real_ip: device2.net
+      connect_to: [device1, device4]
+
+    - name: device3
+      mesh_ip: 10.10.10.3
+      real_ip: device3.duckdns.org
+      connect_to: [device1, device2, device4]
+
+    - name: device4
+      mesh_ip: 10.10.10.4
+      real_ip: device4.domain.com
+
+...
