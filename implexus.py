@@ -29,11 +29,61 @@
 VERSION = 'v0.0.1'
 
 
-import argparse, yaml
-from pathlib import Path
-from os import system
+import argparse, yaml, os, subprocess
+from yaml.loader import SafeLoader
+# from pathlib import Path
+from pprint import pprint
 
+def sh(command, arguments='', inp=''):
+    res = subprocess.run([command, arguments], stdout=subprocess.PIPE, stderr=subprocess.PIPE, input=inp.encode('utf-8'))
+    if res.stderr.decode('utf-8'):
+        print(res.stderr.decode('utf-8'))
+        exit()
+    return res.stdout.decode('utf-8')
 
-if __name__ == "__main__":
-    PROJECT_PATH = Path(__file__).resolve().parent
-    APP = Path(__file__).stem
+def read_yaml(config):
+    with open(config) as f:
+        data = yaml.load(f, Loader=SafeLoader)
+    mesh = {}
+    mesh['Network'] = {
+        'Name': data['mesh']['name'],
+        'Range': data['mesh']['ip_range'],
+        'PersistentKeepalive': data['mesh']['keep_alive'] }
+    for device in data['devices']:
+        private_key = sh('wg', 'genkey').rstrip('\n')
+        public_key = sh('wg', 'pubkey', private_key).rstrip('\n')
+        mesh[device['name']] = {
+            'Address': device['mesh_ip'],
+            'PrivateKey': private_key,
+            'PublicKey': public_key }
+        if 'real_ip' in device.keys():
+            mesh[device['name']]['Endpoint'] = device['real_ip']
+        if 'port' in device.keys():
+            mesh[device['name']]['ListenPort'] = device['port']
+        if 'connect_to' in device.keys():
+            mesh[device['name']]['Peers'] = device['connect_to']
+    return mesh
+
+def output_configs(mesh):
+    output_dir = OUTPUT_DIR + '/' + mesh['Network']['Name']
+    os.makedirs(output_dir, exist_ok=True)
+    for device in mesh:
+        if device == 'Network':
+            continue
+        os.makedirs(output_dir + '/' + device, exist_ok=True)
+        conf = f"[Interface]\n# Name: {device}\nAddress = {mesh[device]['Address']}\nPrivateKey = {mesh[device]['PrivateKey']}"
+        if 'ListenPort' in mesh[device].keys():
+            conf += f"\nListenPort = {mesh[device]['ListenPort']}"
+        if 'Peers' in mesh[device].keys():
+            for peer in mesh[device]['Peers']:
+                conf += f"\n\n[Peer]\n# Name: {peer}\nPublicKey = {mesh[peer]['PublicKey']}\nEndpoint = {mesh[peer]['Endpoint']}:{mesh[peer]['ListenPort']}\nAllowedIPs = {mesh[peer]['Address']}\nPersistentKeepalive = {mesh['Network']['PersistentKeepalive']}"
+        print(conf)
+    return
+
+# if __name__ == "__main__":
+    # PROJECT_PATH = Path(__file__).resolve().parent
+    # APP = Path(__file__).stem
+
+OUTPUT_DIR = '/mnt/ramdisk'
+mesh = read_yaml('network.yaml')
+output_configs(mesh)
