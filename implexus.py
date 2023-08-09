@@ -30,7 +30,6 @@ VERSION = 'v0.0.1'
 
 
 import argparse, yaml, os, subprocess
-from yaml.loader import SafeLoader
 # from pathlib import Path
 from pprint import pprint
 
@@ -43,11 +42,11 @@ def sh(command, arguments='', inp=''):
 
 def read_yaml(config):
     with open(config) as f:
-        data = yaml.load(f, Loader=SafeLoader)
+        data = yaml.load(f, Loader=yaml.loader.SafeLoader)
     mesh = {}
     mesh['Network'] = {
         'Name': data['mesh']['name'],
-        'Range': data['mesh']['ip_range'],
+        # 'Range': data['mesh']['ip_range'],
         'PersistentKeepalive': data['mesh']['keep_alive'] }
     for device in data['devices']:
         private_key = sh('wg', 'genkey').rstrip('\n')
@@ -71,14 +70,19 @@ def output_configs(mesh):
         if device == 'Network':
             continue
         os.makedirs(output_dir + '/' + device, exist_ok=True)
-        conf = f"[Interface]\n# Name: {device}\nAddress = {mesh[device]['Address']}\nPrivateKey = {mesh[device]['PrivateKey']}"
+        conf = f"[Interface]\n# Name: {device}\nAddress = {mesh[device]['Address']}/24\nPrivateKey = {mesh[device]['PrivateKey']}"
         if 'ListenPort' in mesh[device].keys():
             conf += f"\nListenPort = {mesh[device]['ListenPort']}"
         if 'Peers' in mesh[device].keys():
             for peer in mesh[device]['Peers']:
-                conf += f"\n\n[Peer]\n# Name: {peer}\nPublicKey = {mesh[peer]['PublicKey']}\nEndpoint = {mesh[peer]['Endpoint']}:{mesh[peer]['ListenPort']}\nAllowedIPs = {mesh[peer]['Address']}\nPersistentKeepalive = {mesh['Network']['PersistentKeepalive']}"
-        print(conf)
-    return
+                conf += f"\n\n[Peer]\n# Name: {peer}\nPublicKey = {mesh[peer]['PublicKey']}\nEndpoint = {mesh[peer]['Endpoint']}"
+                if 'ListenPort' in mesh[peer].keys():
+                    conf += f":{mesh[peer]['ListenPort']}"
+                conf += f"\nAllowedIPs = {mesh[peer]['Address']}\nPersistentKeepalive = {mesh['Network']['PersistentKeepalive']}"
+        file_name = f"{output_dir}/{device}/wg-{mesh['Network']['Name']}.conf"
+        with open(f"{output_dir}/{device}/wg-{mesh['Network']['Name']}.conf", 'w', encoding='UTF-8') as f:
+            f.write(conf)
+        print(f'Generated {file_name}')
 
 # if __name__ == "__main__":
     # PROJECT_PATH = Path(__file__).resolve().parent
