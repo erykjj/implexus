@@ -23,6 +23,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.7',
-    install_requires=[ 'argparse', 'pathlib', 'os', 'yaml']
+    install_requires=[ 'argparse', 'pathlib', 'os', 'pyyaml', 'subprocess']
 
 )
