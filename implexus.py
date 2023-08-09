@@ -29,7 +29,7 @@
 VERSION = 'v0.0.1'
 
 
-import argparse, yaml, os, subprocess
+import argparse, os, subprocess, yaml
 # from pathlib import Path
 from pprint import pprint
 
@@ -39,6 +39,8 @@ def sh(command, arguments='', inp=''):
         print(res.stderr.decode('utf-8'))
         exit()
     return res.stdout.decode('utf-8')
+
+# {'mesh': {'name': 'mesh', 'keep_alive': 25}, 'devices': [{'name': 'acer', 'mesh_ip': '10.2.2.1', 'real_ip': 'personalis.duckdns.org', 'port': 51821, 'connect_to': ['rpi', 'asus', 'vm', 'mom', 'dad']}, {'name': 'rpi', 'mesh_ip': '10.2.2.2', 'real_ip': '03.crabdance.com', 'port': 51822, 'connect_to': ['mom', 'dad']}, {'name': 'asus', 'mesh_ip': '10.2.2.3', 'real_ip': 'laboris.duckdns.org', 'port': 51823, 'connect_to': ['acer', 'rpi', 'vm', 'mom', 'dad']}, {'name': 'vm', 'mesh_ip': '10.2.2.4', 'real_ip': '03.jumpingcrab.com', 'port': 51824}, {'name': 'mom', 'mesh_ip': '10.2.2.5', 'real_ip': '02.crabdance.com', 'port': 51821, 'connect_to': ['dad']}, {'name': 'dad', 'mesh_ip': '10.2.2.6', 'real_ip': '01.jumpingcrab.com', 'port': 51822, 'connect_to': ['mom']}, {'name': 'x3', 'mesh_ip': '10.2.2.7', 'connect_to': ['acer', 'rpi', 'asus', 'vm', 'mom', 'dad']}, {'name': 'p605', 'mesh_ip': '10.2.2.8', 'connect_to': ['acer', 'rpi', 'asus', 'vm', 'mom', 'dad']}]}
 
 def read_yaml(config):
     with open(config) as f:
@@ -80,9 +82,11 @@ def output_configs(mesh):
                     conf += f":{mesh[peer]['ListenPort']}"
                 conf += f"\nAllowedIPs = {mesh[peer]['Address']}\nPersistentKeepalive = {mesh['Network']['PersistentKeepalive']}"
         file_name = f"{output_dir}/{device}/wg-{mesh['Network']['Name']}.conf"
-        with open(f"{output_dir}/{device}/wg-{mesh['Network']['Name']}.conf", 'w', encoding='UTF-8') as f:
+        with open(file_name, 'w', encoding='UTF-8') as f:
             f.write(conf)
         print(f'Generated {file_name}')
+    with open(f"{output_dir}/{mesh['Network']['Name']}.yaml", 'w', encoding='UTF-8') as f:
+        yaml.dump(mesh, f, Dumper=yaml.dumper.SafeDumper)
 
 # if __name__ == "__main__":
     # PROJECT_PATH = Path(__file__).resolve().parent
