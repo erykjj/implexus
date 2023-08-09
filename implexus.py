@@ -26,12 +26,13 @@
   SOFTWARE.
 """
 
-VERSION = 'v0.0.1'
+VERSION = 'v0.0.2'
 
 
 import argparse, os, subprocess, yaml
 # from pathlib import Path
 from pprint import pprint
+
 
 def sh(command, arguments='', inp=''):
     res = subprocess.run([command, arguments], stdout=subprocess.PIPE, stderr=subprocess.PIPE, input=inp.encode('utf-8'))
@@ -39,6 +40,7 @@ def sh(command, arguments='', inp=''):
         print(res.stderr.decode('utf-8'))
         exit()
     return res.stdout.decode('utf-8')
+
 
 def process_config(config):
     with open(config) as f:
@@ -77,9 +79,9 @@ def process_config(config):
     # with open(f"{output_dir}/{mesh['NetworkName']}.yaml", 'w', encoding='UTF-8') as f:
     #     yaml.dump(mesh, f, Dumper=yaml.dumper.SafeDumper, indent=4)
 
-# if __name__ == "__main__":
-    # PROJECT_PATH = Path(__file__).resolve().parent
-    # APP = Path(__file__).stem
+
+# PROJECT_PATH = Path(__file__).resolve().parent
+# APP = Path(__file__).stem
 
 OUTPUT_DIR = '/mnt/ramdisk'
 process_config('config.yaml')
