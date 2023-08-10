@@ -26,7 +26,7 @@
   SOFTWARE.
 """
 
-VERSION = 'v0.0.2'
+VERSION = 'v0.0.3'
 
 
 import argparse, os, subprocess, yaml
@@ -40,6 +40,10 @@ def sh(command, arguments='', inp=''):
         print(res.stderr.decode('utf-8'))
         exit()
     return res.stdout.decode('utf-8')
+
+
+def create_deploy_script(name):
+    return f'#!/bin/bash\n\ncp {name}.conf /etc/wireguard/\nchown root:root /etc/wireguard/{name}.conf\nchmod 600 /etc/wireguard/{name}.conf\n\nsystemctl enable wg-quick@{name}\nsystemctl start wg-quick@{name}\n\nwg show {name}\n\nexit 0'
 
 
 def process_config(config):
@@ -77,10 +81,12 @@ def process_config(config):
             if 'PersistentKeepalive' in mesh[device].keys():
                 conf += f"\nPersistentKeepalive = {mesh[device]['PersistentKeepalive']}"
 
-        file_name = f"{output_dir}/{device}/wg-{mesh['NetworkName']}.conf"
-        with open(file_name, 'w', encoding='UTF-8') as f:
+        file_dir = f"{output_dir}/{device}/"
+        with open(file_dir + f"{mesh['NetworkName']}.conf", 'w', encoding='UTF-8') as f:
             f.write(conf)
-        print(f'Generated {file_name}')
+        with open(file_dir + f"deploy_{device}.sh", 'w', encoding='UTF-8') as f:
+            f.write(create_deploy_script(mesh['NetworkName']))
+        print(f'Generated config and deploy script for {device}')
     # with open(f"{output_dir}/{mesh['NetworkName']}.yaml", 'w', encoding='UTF-8') as f:
     #     yaml.dump(mesh, f, Dumper=yaml.dumper.SafeDumper, indent=4)
 
