@@ -82,10 +82,12 @@ def process_config(config):
                 conf += f"\nPersistentKeepalive = {mesh[device]['PersistentKeepalive']}"
 
         file_dir = f"{output_dir}/{device}/"
-        with open(file_dir + f"{mesh['NetworkName']}.conf", 'w', encoding='UTF-8') as f:
+        with open(f"{file_dir}{mesh['NetworkName']}.conf", 'w', encoding='UTF-8') as f:
             f.write(conf)
+            os.chmod(f"{file_dir}{mesh['NetworkName']}.conf", mode=0o600)
         with open(file_dir + f"deploy_{device}.sh", 'w', encoding='UTF-8') as f:
             f.write(create_deploy_script(mesh['NetworkName']))
+            os.chmod(f'{file_dir}deploy_{device}.sh', mode=0o740)
         print(f'Generated config and deploy script for {device}')
     # with open(f"{output_dir}/{mesh['NetworkName']}.yaml", 'w', encoding='UTF-8') as f:
     #     yaml.dump(mesh, f, Dumper=yaml.dumper.SafeDumper, indent=4)
