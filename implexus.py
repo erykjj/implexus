@@ -56,21 +56,26 @@ def process_config(config):
         if 'PrivateKey' not in mesh[device].keys():
             mesh[device]['PrivateKey'] = sh('wg', 'genkey').rstrip('\n')
             mesh[device]['PublicKey'] = sh('wg', 'pubkey', mesh[device]['PrivateKey']).rstrip('\n')
-        if 'ListenPort' not in mesh[device].keys():
-            mesh[device]['ListenPort'] = 51820
 
     for device in mesh.keys():
         if device == 'NetworkName':
             continue
-        conf = f"[Interface]\n# Name: {device}\nAddress = {mesh[device]['Address']}/24\nPrivateKey = {mesh[device]['PrivateKey']}\nListenPort = {mesh[device]['ListenPort']}"
-
+        conf = f"[Interface]\n# Name: {device}\nAddress = {mesh[device]['Address']}/24\nPrivateKey = {mesh[device]['PrivateKey']}"
+        if 'ListenPort' in mesh[device].keys():
+            conf += f"\nListenPort = {mesh[device]['ListenPort']}"
         for peer in mesh.keys():
             if peer == 'NetworkName' or peer == device:
+                continue
+            if 'Endpoint' not in mesh[peer].keys() and 'AllowedIPs' not in mesh[device].keys():
                 continue
             conf += f"\n\n[Peer]\n# Name: {peer}\nPublicKey = {mesh[peer]['PublicKey']}"
             if 'Endpoint' in mesh[peer].keys():
                 conf += f"\nEndpoint = {mesh[peer]['Endpoint']}:{mesh[peer]['ListenPort']}"
-            conf += f"\nAllowedIPs = {mesh[peer]['Address']}\nPersistentKeepalive = 25"
+            conf += f"\nAllowedIPs = {mesh[peer]['Address']}/32"
+            if 'AllowedIPs' in mesh[peer].keys():
+                conf += f", {mesh[peer]['AllowedIPs']}"
+            if 'PersistentKeepalive' in mesh[device].keys():
+                conf += f"\nPersistentKeepalive = {mesh[device]['PersistentKeepalive']}"
 
         file_name = f"{output_dir}/{device}/wg-{mesh['NetworkName']}.conf"
         with open(file_name, 'w', encoding='UTF-8') as f:
