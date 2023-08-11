@@ -42,8 +42,21 @@ def sh(command, arguments='', inp=''):
     return res.stdout.decode('utf-8')
 
 
-def create_deploy_script(name):
-    return f'#!/bin/bash\n\ncp {name}.conf /etc/wireguard/\nchown root:root /etc/wireguard/{name}.conf\nchmod 600 /etc/wireguard/{name}.conf\n\nsystemctl enable wg-quick@{name}\nsystemctl start wg-quick@{name}\n\nwg show {name}\n\nexit 0'
+# # IP forwarding - on bouncer/relay node only
+# PreUp = sysctl -w net.ipv4.ip_forward=1
+# # IP masquerading
+# PreUp = iptables -t mangle -A PREROUTING -i wg0 -j MARK --set-mark 0x30
+# PreUp = iptables -t nat -A POSTROUTING ! -o wg0 -m mark --mark 0x30 -j MASQUERADE
+# PostDown = iptables -t mangle -D PREROUTING -i wg0 -j MARK --set-mark 0x30
+# PostDown = iptables -t nat -D POSTROUTING ! -o wg0 -m mark --mark 0x30 -j MASQUERADE
+
+
+def create_deploy_script(name, port):
+    if port:
+        note = f'echo "You may need to add a rule to your firewall to allow traffic to the WireGuard interface\'s port:"\necho "sudo uwf allow {port}/udp"\necho "sudo ufw reload"\n\n'
+    else:
+        note = ''
+    return f'#!/bin/bash\n\nsystemctl stop wg-quick@{name}\nsystemctl disable wg-quick@{name}\n\ncp {name}.conf /etc/wireguard/\nchown root:root /etc/wireguard/{name}.conf\nchmod 600 /etc/wireguard/{name}.conf\n\nsystemctl enable wg-quick@{name}\nsystemctl start wg-quick@{name}\n\nwg show {name}\n\n{note}exit 0'
 
 
 def process_config(config):
@@ -64,9 +77,15 @@ def process_config(config):
     for device in mesh.keys():
         if device == 'NetworkName':
             continue
-        conf = f"[Interface]\n# Name: {device}\nAddress = {mesh[device]['Address']}/24\nPrivateKey = {mesh[device]['PrivateKey']}"
+        if 'AllowedIPs' in mesh[device].keys():
+            subnet = '/24'
+        else:
+            subnet = '/32'
+        conf = f"[Interface]\n# Name: {device}\nAddress = {mesh[device]['Address']}{subnet}\nPrivateKey = {mesh[device]['PrivateKey']}"
         if 'ListenPort' in mesh[device].keys():
             conf += f"\nListenPort = {mesh[device]['ListenPort']}"
+        else:
+            mesh[device]['ListenPort'] = False
         for peer in mesh.keys():
             if peer == 'NetworkName' or peer == device:
                 continue
@@ -75,9 +94,11 @@ def process_config(config):
             conf += f"\n\n[Peer]\n# Name: {peer}\nPublicKey = {mesh[peer]['PublicKey']}"
             if 'Endpoint' in mesh[peer].keys():
                 conf += f"\nEndpoint = {mesh[peer]['Endpoint']}:{mesh[peer]['ListenPort']}"
-            conf += f"\nAllowedIPs = {mesh[peer]['Address']}/32"
+
             if 'AllowedIPs' in mesh[peer].keys():
                 conf += f", {mesh[peer]['AllowedIPs']}"
+            else:
+                conf += f"\nAllowedIPs = {mesh[peer]['Address']}/32"
             if 'PersistentKeepalive' in mesh[device].keys():
                 conf += f"\nPersistentKeepalive = {mesh[device]['PersistentKeepalive']}"
 
@@ -86,7 +107,7 @@ def process_config(config):
             f.write(conf)
             os.chmod(f"{file_dir}{mesh['NetworkName']}.conf", mode=0o600)
         with open(file_dir + f"deploy_{device}.sh", 'w', encoding='UTF-8') as f:
-            f.write(create_deploy_script(mesh['NetworkName']))
+            f.write(create_deploy_script(mesh['NetworkName'], mesh[device]['ListenPort']))
             os.chmod(f'{file_dir}deploy_{device}.sh', mode=0o740)
         print(f'Generated config and deploy script for {device}')
     # with open(f"{output_dir}/{mesh['NetworkName']}.yaml", 'w', encoding='UTF-8') as f:
