@@ -42,15 +42,6 @@ def sh(command, arguments='', inp=''):
     return res.stdout.decode('utf-8')
 
 
-# # IP forwarding - on bouncer/relay node only
-# PreUp = sysctl -w net.ipv4.ip_forward=1
-# # IP masquerading
-# PreUp = iptables -t mangle -A PREROUTING -i wg0 -j MARK --set-mark 0x30
-# PreUp = iptables -t nat -A POSTROUTING ! -o wg0 -m mark --mark 0x30 -j MASQUERADE
-# PostDown = iptables -t mangle -D PREROUTING -i wg0 -j MARK --set-mark 0x30
-# PostDown = iptables -t nat -D POSTROUTING ! -o wg0 -m mark --mark 0x30 -j MASQUERADE
-
-
 def create_deploy_script(name, port):
     if port:
         note = f'echo "You may need to add a rule to your firewall to allow traffic to the WireGuard interface\'s port:"\necho "sudo uwf allow {port}/udp"\necho "sudo ufw reload"\n\n'
@@ -79,11 +70,13 @@ def process_config(config):
             continue
         if 'AllowedIPs' in mesh[device].keys():
             subnet = '/24'
+            routing = f"\n\n# IP forwarding\nPreUp = sysctl -w net.ipv4.ip_forward=1\n\n# IP masquerading\nPreUp = iptables -t mangle -A PREROUTING -i {mesh['NetworkName']} -j MARK --set-mark 0x30\nPreUp = iptables -t nat -A POSTROUTING ! -o {mesh['NetworkName']} -m mark --mark 0x30 -j MASQUERADE\nPostDown = iptables -t mangle -D PREROUTING -i {mesh['NetworkName']} -j MARK --set-mark 0x30\nPostDown = iptables -t nat -D POSTROUTING ! -o {mesh['NetworkName']} -m mark --mark 0x30 -j MASQUERADE"
         else:
             subnet = '/32'
+            routing = ''
         conf = f"[Interface]\n# Name: {device}\nAddress = {mesh[device]['Address']}{subnet}\nPrivateKey = {mesh[device]['PrivateKey']}"
         if 'ListenPort' in mesh[device].keys():
-            conf += f"\nListenPort = {mesh[device]['ListenPort']}"
+            conf += f"\nListenPort = {mesh[device]['ListenPort']}{routing}"
         else:
             mesh[device]['ListenPort'] = False
         for peer in mesh.keys():
