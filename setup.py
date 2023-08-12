@@ -12,7 +12,7 @@ setuptools.setup(
     author="Eryk J.",
     url="https://github.com/erykjj/implexus",
 
-    description="Generate and manage Wireguard mesh networks",
+    description="Generate WireGuard configs based on a network outline",
     long_description=long_description,
     long_description_content_type="text/markdown",
 
