@@ -44,7 +44,7 @@ def sh(command, arguments='', inp=''):
 
 def create_deploy_script(name, port):
     if port:
-        note = f'echo "You may need to add a rule to your firewall to allow traffic to the WireGuard interface\'s port:"\necho "sudo uwf allow {port}/udp"\necho "sudo ufw reload"\n\n'
+        note = f'echo "You may need to add a rule to your firewall to allow traffic to the WireGuard interface\'s port:"\necho "sudo ufw allow {port}/udp"\necho "sudo ufw reload"\n\n'
     else:
         note = ''
     return f'#!/bin/bash\n\nsystemctl stop wg-quick@{name}\nsystemctl disable wg-quick@{name}\n\ncp {name}.conf /etc/wireguard/\nchown root:root /etc/wireguard/{name}.conf\nchmod 600 /etc/wireguard/{name}.conf\n\nsystemctl enable wg-quick@{name}\nsystemctl start wg-quick@{name}\n\nwg show {name}\n\n{note}exit 0'
@@ -89,7 +89,7 @@ def process_config(config):
                 conf += f"\nEndpoint = {mesh[peer]['Endpoint']}:{mesh[peer]['ListenPort']}"
 
             if 'AllowedIPs' in mesh[peer].keys():
-                conf += f", {mesh[peer]['AllowedIPs']}"
+                conf += f"\nAllowedIPs = {mesh[peer]['AllowedIPs']}"
             else:
                 conf += f"\nAllowedIPs = {mesh[peer]['Address']}/32"
             if 'PersistentKeepalive' in mesh[device].keys():
