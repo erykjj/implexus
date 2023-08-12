@@ -1,42 +1,38 @@
-# Sample config
-# Once generated, execute as root (replace 'name' with your mesh name):
-#   install wireguard
-#   mkdir -m 0700 /etc/wireguard/
-#   cp wg-name.conf /etc/wireguard/
-#   chown root:root /etc/wireguard/wg-name.conf
-#   chmod 600 /etc/wireguard/wg-name.conf
-#   systemctl enable wg-quick@wg-name
-#   systemctl start wg-quick@wg-name
-#   wg show
-# Allow access to your mesh IP range in your firewall:
-#   ufw default deny incoming
-#   ufw default allow outgoing
-#   ufw allow from xxx.xxx.xxx.0/24 [to any port xxx proto tcp]
-#   ufw reload
----
+NetworkName: wg-network
 
-mesh:
-    name: example
-    keep_alive: 25
+device1:
+    Address: 10.1.1.1
+    AllowedIPs: 10.1.1.0/24  # always-on relay/bouncer for the whole network
+    Endpoint: my.publicip.com
+    ListenPort: 51821 # port-forwarding enabled on router
 
-devices:
-    - name: device1
-      mesh_ip: 10.10.10.1
-      real_ip: device1.com
-      connect_to: [device2, device3, device4]
+device2:
+    Address: 10.1.1.2
+    Endpoint: my.publicip.com
+    ListenPort: 51822 # port-forwarding enabled on router
 
-    - name: device2
-      mesh_ip: 10.10.10.2
-      real_ip: device2.net
-      connect_to: [device1, device4]
+device3:
+    Address: 10.1.1.3
+    Endpoint: my.publicip.com
+    ListenPort: 51823 # port-forwarding enabled on router
 
-    - name: device3
-      mesh_ip: 10.10.10.3
-      real_ip: device3.duckdns.org
-      connect_to: [device1, device2, device4]
+device4:
+    Address: 10.1.1.4
+    Endpoint: my.publicip.com
+    ListenPort: 51824 # port-forwarding enabled on router
 
-    - name: device4
-      mesh_ip: 10.10.10.4
-      real_ip: device4.domain.com
+device5: # behind no-access router/NAT on another network
+    Address: 10.1.1.5
+    PersistentKeepalive: 25
 
-...
+device6: # behind no-access router/NAT on another network
+    Address: 10.1.1.6
+    PersistentKeepalive: 25
+
+device7: # mobile - no fixed IP
+    Address: 10.1.1.7
+    PersistentKeepalive: 25
+
+device8: # mobile - no fixed IP
+    Address: 10.1.1.8
+    PersistentKeepalive: 25
