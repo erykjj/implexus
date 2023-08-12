@@ -3,7 +3,7 @@
 """
   File:           implexus
 
-  Description:    Generate and manage Wireguard mesh networks
+  Description:    Generate WireGuard configs based on a network outline
 
   MIT License:    Copyright (c) 2023 Eryk J.
 
@@ -26,12 +26,11 @@
   SOFTWARE.
 """
 
-VERSION = 'v0.0.3'
+APP = 'implexus'
+VERSION = 'v0.1.0'
 
 
 import argparse, os, subprocess, yaml
-# from pathlib import Path
-from pprint import pprint
 
 
 def sh(command, arguments='', inp=''):
@@ -50,17 +49,17 @@ def create_deploy_script(name, port):
     return f'#!/bin/bash\n\nsystemctl stop wg-quick@{name}\nsystemctl disable wg-quick@{name}\n\ncp {name}.conf /etc/wireguard/\nchown root:root /etc/wireguard/{name}.conf\nchmod 600 /etc/wireguard/{name}.conf\n\nsystemctl enable wg-quick@{name}\nsystemctl start wg-quick@{name}\n\nwg show {name}\n\n{note}exit 0'
 
 
-def process_config(config):
+def process_config(config, dir):
     with open(config) as f:
         mesh = yaml.load(f, Loader=yaml.loader.SafeLoader)
 
-    output_dir = OUTPUT_DIR + '/' + mesh['NetworkName']
-    os.makedirs(output_dir, exist_ok=True)
+    dir += '/' + mesh['NetworkName']
+    os.makedirs(dir, exist_ok=True)
 
     for device in mesh.keys():
         if device == 'NetworkName':
             continue
-        os.makedirs(output_dir + '/' + device, exist_ok=True)
+        os.makedirs(dir + '/' + device, exist_ok=True)
         if 'PrivateKey' not in mesh[device].keys():
             mesh[device]['PrivateKey'] = sh('wg', 'genkey').rstrip('\n')
             mesh[device]['PublicKey'] = sh('wg', 'pubkey', mesh[device]['PrivateKey']).rstrip('\n')
@@ -95,7 +94,7 @@ def process_config(config):
             if 'PersistentKeepalive' in mesh[device].keys():
                 conf += f"\nPersistentKeepalive = {mesh[device]['PersistentKeepalive']}"
 
-        file_dir = f"{output_dir}/{device}/"
+        file_dir = f"{dir}/{device}/"
         with open(f"{file_dir}{mesh['NetworkName']}.conf", 'w', encoding='UTF-8') as f:
             f.write(conf)
             os.chmod(f"{file_dir}{mesh['NetworkName']}.conf", mode=0o600)
@@ -103,13 +102,17 @@ def process_config(config):
             f.write(create_deploy_script(mesh['NetworkName'], mesh[device]['ListenPort']))
             os.chmod(f'{file_dir}deploy_{device}.sh', mode=0o740)
         print(f'Generated config and deploy script for {device}')
-    # with open(f"{output_dir}/{mesh['NetworkName']}.yaml", 'w', encoding='UTF-8') as f:
+    # with open(f"{dir}/{mesh['NetworkName']}.yaml", 'w', encoding='UTF-8') as f:
     #     yaml.dump(mesh, f, Dumper=yaml.dumper.SafeDumper, indent=4)
 
 
-# PROJECT_PATH = Path(__file__).resolve().parent
-# APP = Path(__file__).stem
-
-OUTPUT_DIR = '/mnt/ramdisk'
-process_config('config.yaml')
-
+parser = argparse.ArgumentParser(description="Generate WireGuard configs based on a network outline")
+parser.add_argument('-v', '--version', action='version', version=f"{APP} {VERSION}")
+parser.add_argument("Outline", help='Network outline (YAML format)')
+parser.add_argument('-o', metavar='directory', help='Output directory (working dir if not provided)')
+args = vars(parser.parse_args())
+if args['o']:
+    dir = args['o'].rstrip('/')
+else:
+    dir = '.'
+process_config(args['Outline'], dir)
