@@ -8,7 +8,7 @@ long_description = (work_dir / "README.md").read_text()
 setuptools.setup(
 
     name="implexus",
-    version="0.0.1",
+    version="0.1.0",
     author="Eryk J.",
     url="https://github.com/erykjj/implexus",
 
@@ -23,6 +23,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.7',
-    install_requires=[ 'argparse', 'pathlib', 'os', 'pyyaml', 'subprocess']
+    install_requires=[ 'argparse', 'os', 'pyyaml', 'subprocess']
 
 )
