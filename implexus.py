@@ -46,7 +46,10 @@ def create_deploy_script(name, port):
         note = f'echo "You may need to add a rule to your firewall to allow traffic to the WireGuard interface\'s port:"\necho "sudo ufw allow {port}/udp"\necho "sudo ufw reload"\n\n'
     else:
         note = ''
-    return f'#!/bin/bash\n\nsystemctl stop wg-quick@{name}\nsystemctl disable wg-quick@{name}\n\ncp {name}.conf /etc/wireguard/\nchown root:root /etc/wireguard/{name}.conf\nchmod 600 /etc/wireguard/{name}.conf\n\nsystemctl enable wg-quick@{name}\nsystemctl start wg-quick@{name}\n\nwg show {name}\n\n{note}exit 0'
+    return f'#!/bin/bash\n\nsystemctl stop wg-quick@{name}\nsystemctl disable wg-quick@{name}\n\ncp --remove-destination {name}.conf /etc/wireguard/\nchown root:root /etc/wireguard/{name}.conf\nchmod 600 /etc/wireguard/{name}.conf\n\nsystemctl enable wg-quick@{name}\nsystemctl start wg-quick@{name}\n\nwg show {name}\n\n{note}exit 0'
+
+def create_remove_script(name):
+    return f'#!/bin/bash\n\nsystemctl stop wg-quick@{name}\nsystemctl disable wg-quick@{name}\n\nrm /etc/wireguard/{name}.conf\n\nwg show\n\necho "You may also need to check your firewall rules"\n\nexit 0'
 
 
 def process_config(config, dir):
@@ -78,6 +81,8 @@ def process_config(config, dir):
             conf += f"\nListenPort = {mesh[device]['ListenPort']}{routing}"
         else:
             mesh[device]['ListenPort'] = False
+        if 'DNS' in mesh[device].keys():
+            conf += f"\nDNS = {mesh[device]['DNS']}"
         for peer in mesh.keys():
             if peer == 'NetworkName' or peer == device:
                 continue
@@ -101,9 +106,10 @@ def process_config(config, dir):
         with open(file_dir + f"deploy_{device}.sh", 'w', encoding='UTF-8') as f:
             f.write(create_deploy_script(mesh['NetworkName'], mesh[device]['ListenPort']))
             os.chmod(f'{file_dir}deploy_{device}.sh', mode=0o740)
-        print(f'Generated config and deploy script for {device}')
-    # with open(f"{dir}/{mesh['NetworkName']}.yaml", 'w', encoding='UTF-8') as f:
-    #     yaml.dump(mesh, f, Dumper=yaml.dumper.SafeDumper, indent=4)
+        with open(file_dir + f"remove_{device}.sh", 'w', encoding='UTF-8') as f:
+            f.write(create_remove_script(mesh['NetworkName']))
+            os.chmod(f'{file_dir}remove_{device}.sh', mode=0o740)
+        print(f'Generated config and scripts for {device}')
 
 
 parser = argparse.ArgumentParser(description="Generate WireGuard configs based on a network outline")
