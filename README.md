@@ -12,11 +12,6 @@ The script requires the WireGuard `wg` binary to generate the private/public key
 As the deploy script indicates, you may also have to tweak your firewall to allow the UDP connections to get through to your device.
 
 ____
-## Installation
-
-Download [latest source](https://github.com/erykjj/implexus/releases/latest) and `python3 -m pip install implexus-*.tar.gz`.
-
-____
 ## Command-line usage
 ```
 usage: implexus.py [-h] [-v] [-o directory] Outline
