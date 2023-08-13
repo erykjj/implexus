@@ -2,7 +2,7 @@ NetworkName: wg-network
 
 device1:
     Address: 10.1.1.1
-    AllowedIPs: 10.1.1.0/24  # always-on relay/bouncer for the whole network
+    AllowedIPs: 10.1.1.1/24  # always-on relay/bouncer for the whole network
     Endpoint: my.publicip.com
     ListenPort: 51821 # port-forwarding enabled on router
 
