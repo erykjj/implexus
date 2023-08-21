@@ -1,9 +1,8 @@
 # implexus
 
-
 ## Purpose
 
-This is a Python script to automate the generation of interface configs for multi-peer (WireGuard)[https://www.wireguard.com/] mesh networks. The peers are all listed in an 'outline' (config file in YAML format) passed to the script. See the (sample_config.yaml)[https://github.com/erykjj/implexus/blob/main/sample_config.yaml) for format layout. The `NetworkName` will end up being the network interface name. The `Address` IPs are according to your chosen virtual 'LAN'. You can have multiple mesh networks spanning the same or different devices, as long as the names and IP ranges don't conflict.
+This is a Python script to automate the generation of interface configs for multi-peer [WireGuard](https://www.wireguard.com/) mesh networks. The peers are all listed in an 'outline' (config file in YAML format) passed to the script. See the [sample_config.yaml](https://github.com/erykjj/implexus/blob/main/sample_config.yaml) for format layout. The `NetworkName` will end up being the network interface name. The `Address` IPs are according to your chosen virtual 'LAN'. You can have multiple mesh networks spanning the same or different devices, as long as the names and IP ranges don't conflict.
 
 Only specify `Endpoint` and `ListenPort` for peers that have a fixed public IP (even via dynamic DNS) and port (via NAT port forwarding). You need at least one such peer to act as a hub (= relay/bouncer), in which case also indicate `AllowedIPs` for that peer with the `/24` suffix, which will make it accept packets destined to the whole subnet. Only have one such peer per network (= interface), though you don't need one at all. You *can* have only point-to-point connections: as long as a peer has a public IP and port, all the others should be able to connect to it, but won't be able to connect to other 'dynamic' peers without a hub/router/relay/bouncer.
 
