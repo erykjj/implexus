@@ -14,7 +14,7 @@ As the deploy script indicates, you may also have to tweak your firewall to allo
 ____
 ## Command-line usage
 ```
-usage: implexus.py [-h] [-v] [-o directory] Outline
+usage: python3 implexus.py [-h] [-v] [-o directory] Outline
 
 Generate WireGuard configs based on a network outline
 
